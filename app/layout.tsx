@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import GlobalBackground from '@/components/GlobalBackground';
+import SmoothScroll from '@/components/SmoothScroll';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -39,9 +39,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${jakarta.variable} ${inter.variable} antialiased`}>
-        <GlobalBackground />
+        <a href="#main-content" className="skip-to-content">Skip to main content</a>
+        <SmoothScroll />
         <Header />
-        <main>
+        <main id="main-content">
           {children}
         </main>
         <Footer />

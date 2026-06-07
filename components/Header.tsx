@@ -18,15 +18,20 @@ export default function Header() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 20);
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const close = () => {
-    setOpen(false);
-    window.scrollTo({ top: 0, behavior: "instant" });
-  };
+  const close = () => setOpen(false);
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -40,7 +45,7 @@ export default function Header() {
 
       <header className={`site-header${scrolled ? ' scrolled' : ''}`}>
         <Link href="/" className="logo-link" onClick={close}>
-          <Image src="/assets/logo.svg" alt="Airiv Infotech" className="logo img-fluid" width={130} height={40} />
+          <Image src="/assets/logo.svg" alt="Airiv Infotech" className="logo-icon" width={44} height={44} />
         </Link>
 
         {/* Desktop Nav */}
@@ -55,19 +60,21 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/contact"
-            className={`nav-contact-btn${isActive('/contact') ? ' active' : ''}`}
-            onClick={close}
-          >
-            Contact
-          </Link>
         </nav>
+
+        {/* CTA Button */}
+        <Link
+          href="/contact"
+          className={`nav-contact-btn desktop-only${isActive('/contact') ? ' active' : ''}`}
+          onClick={close}
+        >
+          Contact
+        </Link>
 
         {/* Mobile hamburger */}
         <button
           className="nav-toggle"
-          aria-label="Toggle navigation"
+          aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -77,7 +84,7 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       {open && (
-        <div className="mobile-menu-overlay">
+        <div className="mobile-menu-overlay" role="dialog" aria-modal="true" aria-label="Navigation menu">
           {[...navLinks, { href: '/contact', label: 'Contact' }].map((link) => (
             <Link
               key={link.href}

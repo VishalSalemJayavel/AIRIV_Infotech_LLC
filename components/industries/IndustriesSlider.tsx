@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useReveal } from '@/hooks/useReveal';
 import Image from 'next/image';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Slide {
   image: string;
@@ -41,9 +42,12 @@ const slides: Slide[] = [
 export default function IndustriesSlider() {
   const [index, setIndex] = useState(0);
   const ref = useReveal();
+  const visibleCount = 3.5;
+  const cardPct = 100 / visibleCount;
+  const maxIndex = slides.length - visibleCount;
 
-  const next = () => { if (index < slides.length - 3) setIndex(index + 1); };
-  const prev = () => { if (index > 0) setIndex(index - 1); };
+  const next = () => setIndex((i) => Math.min(i + 1, maxIndex));
+  const prev = () => setIndex((i) => Math.max(i - 1, 0));
 
   return (
     <section ref={ref as React.RefObject<HTMLElement>} className="section industries-section pop-reveal">
@@ -51,20 +55,39 @@ export default function IndustriesSlider() {
         <h2 className="is-heading strike-heading">Industries We Serve</h2>
       </div>
 
-      <div className="is-carousel-fullwidth">
-        <div className="carousel">
+      <div className="nf-row">
+        <button
+          className="nf-arrow nf-arrow-left"
+          onClick={prev}
+          aria-label="Previous"
+          style={{ opacity: index === 0 ? 0.2 : 1, pointerEvents: index === 0 ? 'none' : 'auto' }}
+        >
+          <ChevronLeft size={28} />
+        </button>
+
+        <div className="nf-viewport">
           <div
-            className="carousel-inner"
-            style={{ transform: `translateX(-${index * 33.33}%)` }}
+            className="nf-track"
+            style={{ transform: `translateX(-${index * cardPct}%)` }}
           >
             {slides.map((slide, i) => (
-              <div key={i} className="industry-card-wrap">
-                <div className="industry-card">
-                  <Image src={slide.image} alt={slide.title} width={400} height={400} loading="lazy" />
-                  <div className="industry-content">
-                    <span className="industry-number">{String(i + 1).padStart(2, '0')}.</span>
-                    <h3>{slide.title}</h3>
-                    <p>{slide.desc}</p>
+              <div
+                key={slide.title}
+                className="nf-card"
+                style={{ flex: `0 0 ${cardPct}%` }}
+              >
+                <div className="nf-card-inner">
+                  <Image
+                    src={slide.image}
+                    alt={slide.title}
+                    fill
+                    className="nf-card-img"
+                    loading="lazy"
+                  />
+                  <div className="nf-card-overlay" />
+                  <div className="nf-card-body">
+                    <h3 className="nf-card-title">{slide.title}</h3>
+                    <p className="nf-card-desc">{slide.desc}</p>
                   </div>
                 </div>
               </div>
@@ -72,10 +95,14 @@ export default function IndustriesSlider() {
           </div>
         </div>
 
-        <div className="carousel-nav-bottom">
-          <button onClick={prev} className="carousel-btn">&#8249;</button>
-          <button onClick={next} className="carousel-btn">&#8250;</button>
-        </div>
+        <button
+          className="nf-arrow nf-arrow-right"
+          onClick={next}
+          aria-label="Next"
+          style={{ opacity: index >= maxIndex ? 0.2 : 1, pointerEvents: index >= maxIndex ? 'none' : 'auto' }}
+        >
+          <ChevronRight size={28} />
+        </button>
       </div>
     </section>
   );

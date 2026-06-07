@@ -9,6 +9,18 @@ import Careers from '@/components/Careers';
 export const metadata: Metadata = {
   title: 'AIRIV - Technology with Intelligence. Solutions with Purpose.',
   description: 'We engineer intelligent, scalable, and secure enterprise solutions that drive real business outcomes.',
+  openGraph: {
+    title: 'Airiv Infotech | Technology with Intelligence',
+    description: 'We engineer intelligent, scalable, and secure enterprise solutions that drive real business outcomes.',
+    url: 'https://airivinfotech.com',
+    siteName: 'Airiv Infotech',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Airiv Infotech | Technology with Intelligence',
+    description: 'We engineer intelligent, scalable, and secure enterprise solutions that drive real business outcomes.',
+  },
 };
 
 export default function HomePage() {

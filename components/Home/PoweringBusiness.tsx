@@ -19,7 +19,7 @@ const items: PoweringItem[] = [
     link: '/industries',
   },
   {
-    image: '/assets/powering/img2.png',
+    image: '/assets/powering/img2.jpg',
     title: 'Services',
     desc: 'AI & Data Analytics, Cloud & Application Development, Enterprise Asset Management, QA & Testing, and Talent Services.',
     link: '/services',
@@ -42,7 +42,7 @@ export default function PoweringBusiness() {
       <div className="pb-grid">
         {items.map((item, index) => (
           <div
-            key={index}
+            key={item.title}
             className="pb-card"
             style={{ '--stagger': `${index * 150}ms` } as React.CSSProperties}
           >

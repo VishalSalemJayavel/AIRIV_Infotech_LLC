@@ -148,7 +148,7 @@ export default function GlobalBackground() {
         height:        "100%",
         pointerEvents: "none",
         zIndex:        2,
-        mixBlendMode:  "screen",
+        mixBlendMode:  "multiply",
       }}
     />
   );

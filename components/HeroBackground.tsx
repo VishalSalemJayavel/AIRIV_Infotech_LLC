@@ -1,197 +1,243 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 interface HeroBackgroundProps {
   className?: string;
   compact?: boolean;
+  blobX?: number; // 0.0–1.0 override for blob center x
 }
 
-export default function HeroBackground({ className = "", compact = false }: HeroBackgroundProps) {
+const VERT = `
+  attribute vec2 a_pos;
+  void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FRAG = `
+  precision highp float;
+  uniform float uTime;
+  uniform vec2  uRes;
+  uniform vec2  uCenter;
+  uniform float uScale;
+
+  float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0-h);
+  }
+
+  float sdSphere(vec3 p, float r) { return length(p) - r; }
+
+  /* 9-sphere metaball — complex multi-lobe shape */
+  float map(vec3 p, float t) {
+    float d = sdSphere(p - vec3( sin(t*0.52)*0.72,  cos(t*0.41)*0.52,  0.00), 0.56);
+    d = smin(d, sdSphere(p - vec3( cos(t*0.37)*0.58,  sin(t*0.73)*0.48,  sin(t*0.28)*0.32), 0.46), 0.68);
+    d = smin(d, sdSphere(p - vec3( sin(t*0.61+2.1)*0.52, cos(t*0.58)*0.32, cos(t*0.44)*0.52), 0.42), 0.58);
+    d = smin(d, sdSphere(p - vec3( cos(t*0.77+0.9)*0.62, sin(t*0.32+0.6)*0.62, sin(t*0.51)*0.22), 0.44), 0.65);
+    d = smin(d, sdSphere(p - vec3( sin(t*0.46+3.2)*0.40, cos(t*0.65+1.1)*0.44, cos(t*0.68)*0.44), 0.36), 0.52);
+    d = smin(d, sdSphere(p - vec3( cos(t*0.55+1.5)*0.48, sin(t*0.48+2.0)*0.52, sin(t*0.35)*0.38), 0.32), 0.46);
+    return d;
+  }
+
+  vec3 calcNormal(vec3 p, float t) {
+    vec2 e = vec2(0.001, 0.0);
+    return normalize(vec3(
+      map(p+e.xyy,t)-map(p-e.xyy,t),
+      map(p+e.yxy,t)-map(p-e.yxy,t),
+      map(p+e.yyx,t)-map(p-e.yyx,t)
+    ));
+  }
+
+  void main() {
+    vec2 center = uCenter;
+    float scale  = uScale;
+    vec2 uv = (gl_FragCoord.xy - center) / scale;
+
+    vec3 ro = vec3(0.0, 0.0, 3.2);
+    vec3 rd = normalize(vec3(uv, -1.0));
+
+    float t = 0.0, hit = -1.0;
+    for (int i = 0; i < 56; i++) {
+      float d = map(ro + rd*t, uTime);
+      if (d < 0.0006) { hit = t; break; }
+      t += max(d * 0.60, 0.003);
+      if (t > 10.0) break;
+    }
+
+    if (hit < 0.0) { gl_FragColor = vec4(0.0); return; }
+
+    vec3 p = ro + rd * hit;
+    vec3 n = calcNormal(p, uTime);
+    vec3 v = -rd;
+
+    vec3 L1 = normalize(vec3(-1.5,  2.0, 2.5));
+    vec3 L2 = normalize(vec3( 1.8, -1.2, 2.0));
+
+    float diff1 = max(dot(n, L1), 0.0);
+    float diff2 = max(dot(n, L2), 0.0) * 0.25;
+
+    vec3  H1    = normalize(L1 + v);
+    float spec1 = pow(max(dot(n, H1), 0.0), 100.0);
+    float spec2 = pow(max(dot(n, H1), 0.0),  22.0) * 0.28;
+
+    float ndv     = max(dot(n, v), 0.0);
+    float frMid   = pow(1.0 - ndv, 1.8);
+    float frOuter = pow(1.0 - ndv, 3.2);
+    float frEdge  = pow(1.0 - ndv, 6.0);
+
+    float cavity = 0.25 + 0.75*(0.5 + 0.5*dot(n, normalize(vec3(0.0,1.0,1.0))));
+
+    vec3 interior  = vec3(0.01, 0.04, 0.02);
+    vec3 bodyLit   = vec3(0.04, 0.18, 0.08);
+    vec3 rimSage   = vec3(0.12, 0.42, 0.20);
+    vec3 rimForest = vec3(0.08, 0.52, 0.26);
+    vec3 rimMint   = vec3(0.18, 0.68, 0.38);
+    vec3 specCol   = vec3(0.50, 0.80, 0.55);
+
+    vec3 col = interior * 0.15
+             + bodyLit * (diff1 + diff2) * cavity
+             + specCol  * spec1 * 2.0
+             + vec3(0.18, 0.52, 0.28) * spec2
+             + rimSage   * frMid   * 1.4
+             + rimForest * frOuter * 2.0
+             + rimMint   * frEdge  * 0.6;
+
+    col += vec3(0.01, 0.08, 0.03) * (1.0 - cavity) * 0.6;
+
+    float vign = 1.0 - smoothstep(1.05, 1.75, length(uv));
+
+    gl_FragColor = vec4(col, vign);
+  }
+`;
+
+function compileShader(gl: WebGLRenderingContext, type: number, src: string) {
+  const s = gl.createShader(type)!;
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  return s;
+}
+
+export default function HeroBackground({ className = "", compact = false, blobX }: HeroBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const siriRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -1, y: -1 });
-  const animRef = useRef<number>(0);
-
-  const init = useCallback(() => {
-    const container = containerRef.current;
-    const cSiri = siriRef.current;
-    const cPart = particlesRef.current;
-    if (!container || !cSiri || !cPart) return;
-
-    const W = container.offsetWidth;
-    const H = container.offsetHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    cSiri.width = W * dpr; cSiri.height = H * dpr;
-    const ctxS = cSiri.getContext("2d")!;
-    ctxS.scale(dpr, dpr);
-
-    cPart.width = W * dpr; cPart.height = H * dpr;
-    const ctxP = cPart.getContext("2d")!;
-    ctxP.scale(dpr, dpr);
-
-    const orbs = [
-      { cx: W*0.30, cy: H*0.40, baseR: Math.min(W,H)*0.52, color: [0,100,255]  as [number,number,number], o: 0.28, phase: 0,   orbitRx: 60,  orbitRy: 38, orbitSpeed: 0.0004, pulseSpeed: 0.0008, pulseAmp: 0.14 },
-      { cx: W*0.68, cy: H*0.45, baseR: Math.min(W,H)*0.46, color: [0,170,255]  as [number,number,number], o: 0.22, phase: 2.0, orbitRx: 70,  orbitRy: 42, orbitSpeed: 0.0006, pulseSpeed: 0.001,  pulseAmp: 0.12 },
-      { cx: W*0.48, cy: H*0.58, baseR: Math.min(W,H)*0.54, color: [0,60,200]   as [number,number,number], o: 0.20, phase: 4.0, orbitRx: 45,  orbitRy: 50, orbitSpeed: 0.0003, pulseSpeed: 0.0006, pulseAmp: 0.10 },
-      { cx: W*0.58, cy: H*0.30, baseR: Math.min(W,H)*0.32, color: [0,201,167]  as [number,number,number], o: 0.20, phase: 1.0, orbitRx: 50,  orbitRy: 28, orbitSpeed: 0.0007, pulseSpeed: 0.0012, pulseAmp: 0.17 },
-      { cx: W*0.35, cy: H*0.25, baseR: Math.min(W,H)*0.30, color: [50,130,240] as [number,number,number], o: 0.26, phase: 3.0, orbitRx: 30,  orbitRy: 36, orbitSpeed: 0.0009, pulseSpeed: 0.0015, pulseAmp: 0.20 },
-    ];
-
-    interface Particle {
-      x: number; y: number; vx: number; vy: number;
-      baseS: number; o: number; pulse: number;
-    }
-
-    const N = 100;
-    const particles: Particle[] = [];
-    for (let i = 0; i < N; i++) {
-      particles.push({
-        x: Math.random() * W, y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() - 0.5) * 0.22,
-        baseS: Math.random() * 2.2 + 0.6, o: Math.random() * 0.55 + 0.18,
-        pulse: Math.random() * Math.PI * 2,
-      });
-    }
-    const CD = 150, CDSQ = CD * CD;
-    let t = 0;
-
-    // Lerped cursor position for smooth spotlight
-    let curX = W * 0.5, curY = H * 0.4;
-    let spotOpacity = 0; // fades in when mouse enters
-
-    function draw() {
-      t += 1;
-
-      // Smooth-follow the real mouse; fade in/out
-      const mx = mouseRef.current.x, my = mouseRef.current.y;
-      if (mx > 0) {
-        curX += (mx - curX) * 0.07;
-        curY += (my - curY) * 0.07;
-        spotOpacity += (1 - spotOpacity) * 0.06;
-      } else {
-        spotOpacity += (0 - spotOpacity) * 0.04;
-      }
-
-      ctxS.clearRect(0, 0, W, H);
-      orbs.forEach(orb => {
-        const x = orb.cx + Math.cos(t * orb.orbitSpeed + orb.phase) * orb.orbitRx;
-        const y = orb.cy + Math.sin(t * orb.orbitSpeed * 0.7 + orb.phase) * orb.orbitRy;
-        const pulse = 1 + Math.sin(t * orb.pulseSpeed + orb.phase) * orb.pulseAmp;
-        const r = orb.baseR * pulse;
-        let fx = x, fy = y;
-        if (mouseRef.current.x > 0) {
-          const dx = mouseRef.current.x - x, dy = mouseRef.current.y - y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 650) { const pull = 0.032 * (1 - dist / 650); fx = x + dx * pull; fy = y + dy * pull; }
-        }
-        const grad = ctxS.createRadialGradient(fx, fy, 0, fx, fy, r);
-        grad.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${orb.o})`);
-        grad.addColorStop(0.25, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${orb.o * 0.7})`);
-        grad.addColorStop(0.5, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${orb.o * 0.3})`);
-        grad.addColorStop(0.75, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${orb.o * 0.08})`);
-        grad.addColorStop(1, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},0)`);
-        ctxS.fillStyle = grad;
-        ctxS.fillRect(0, 0, W, H);
-      });
-
-      // Cursor spotlight — large soft glow that follows the mouse
-      if (spotOpacity > 0.005) {
-        const sg = ctxS.createRadialGradient(curX, curY, 0, curX, curY, Math.min(W, H) * 0.55);
-        sg.addColorStop(0,    `rgba(0,140,255,${0.22 * spotOpacity})`);
-        sg.addColorStop(0.25, `rgba(0,100,220,${0.14 * spotOpacity})`);
-        sg.addColorStop(0.55, `rgba(0,60,180,${0.06 * spotOpacity})`);
-        sg.addColorStop(1,    `rgba(0,0,0,0)`);
-        ctxS.fillStyle = sg;
-        ctxS.fillRect(0, 0, W, H);
-
-        // tight bright core right at cursor
-        const cg = ctxS.createRadialGradient(curX, curY, 0, curX, curY, 80);
-        cg.addColorStop(0, `rgba(120,200,255,${0.18 * spotOpacity})`);
-        cg.addColorStop(1, `rgba(0,100,255,0)`);
-        ctxS.fillStyle = cg;
-        ctxS.fillRect(0, 0, W, H);
-      }
-
-      ctxP.clearRect(0, 0, W, H);
-      const mx2 = mouseRef.current.x, my2 = mouseRef.current.y;
-      for (let i = 0; i < N; i++) {
-        const pt = particles[i]; let ax = 0, ay = 0;
-        if (mx2 > 0) {
-          const dx = mx2 - pt.x, dy = my2 - pt.y, d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 180 && d > 1) { ax += (dx / d) * 0.02; ay += (dy / d) * 0.02; }
-        }
-        pt.vx += ax; pt.vy += ay; pt.vx *= 0.998; pt.vy *= 0.998;
-        pt.x += pt.vx; pt.y += pt.vy;
-        if (pt.x < -20) pt.x = W + 20; if (pt.x > W + 20) pt.x = -20;
-        if (pt.y < -20) pt.y = H + 20; if (pt.y > H + 20) pt.y = -20;
-      }
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-          const dSq = dx * dx + dy * dy;
-          if (dSq < CDSQ) {
-            const d = Math.sqrt(dSq), alpha = 0.14 * (1 - d / CD);
-            ctxP.beginPath(); ctxP.moveTo(particles[i].x, particles[i].y);
-            ctxP.lineTo(particles[j].x, particles[j].y);
-            ctxP.strokeStyle = `rgba(0,119,255,${alpha})`; ctxP.lineWidth = 0.4; ctxP.stroke();
-          }
-        }
-      }
-      const tSlow = t * 0.005;
-      for (let i = 0; i < N; i++) {
-        const pt = particles[i], glow = 0.7 + Math.sin(tSlow * 2 + pt.pulse) * 0.3;
-        const s = pt.baseS * (0.85 + glow * 0.15);
-        ctxP.beginPath(); ctxP.arc(pt.x, pt.y, s * 3.5, 0, Math.PI * 2);
-        ctxP.fillStyle = `rgba(0,119,255,${pt.o * 0.1 * glow})`; ctxP.fill();
-        ctxP.beginPath(); ctxP.arc(pt.x, pt.y, s, 0, Math.PI * 2);
-        ctxP.fillStyle = `rgba(0,119,255,${pt.o * glow})`; ctxP.fill();
-        ctxP.beginPath(); ctxP.arc(pt.x, pt.y, s * 0.45, 0, Math.PI * 2);
-        ctxP.fillStyle = `rgba(180,220,255,${pt.o * 0.5 * glow})`; ctxP.fill();
-      }
-      animRef.current = requestAnimationFrame(draw);
-    }
-    draw();
-  }, []);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const rafRef       = useRef<number>(0);
 
   useEffect(() => {
-    init();
-    const handleMouseMove = (e: MouseEvent) => {
-      const container = containerRef.current;
-      if (!container) return;
-      const r = container.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
-      if (x >= 0 && x <= r.width && y >= 0 && y <= r.height) {
-        mouseRef.current = { x, y };
-      } else {
-        mouseRef.current = { x: -1, y: -1 };
-      }
-    };
-    const handleMouseLeave = () => { mouseRef.current = { x: -1, y: -1 }; };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
-    const handleResize = () => { cancelAnimationFrame(animRef.current); init(); };
-    window.addEventListener("resize", handleResize);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false });
+    if (!gl) return;
+
+    /* Compile program */
+    const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
+    const frag = compileShader(gl, gl.FRAGMENT_SHADER, FRAG);
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, vert);
+    gl.attachShader(prog, frag);
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    /* Full-screen quad */
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(prog, "a_pos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const uTime   = gl.getUniformLocation(prog, "uTime");
+    const uRes    = gl.getUniformLocation(prog, "uRes");
+    const uCenter = gl.getUniformLocation(prog, "uCenter");
+    const uScale  = gl.getUniformLocation(prog, "uScale");
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    let start = performance.now();
+    let visible = true;
+
+    // Pre-compute stable uniform values — recalculated only on resize
+    let cx = 0, cy = 0, sc = 0;
+
+    function updateUniforms() {
+      const defaultX = compact ? 0.78 : 0.50;
+      cx = canvas!.width  * (blobX ?? defaultX);
+      cy = canvas!.height * 0.50;
+      sc = compact ? canvas!.height * 0.55 : canvas!.height * 0.80;
+      gl!.uniform2f(uRes,    canvas!.width, canvas!.height);
+      gl!.uniform2f(uCenter, cx, cy);
+      gl!.uniform1f(uScale,  sc);
+    }
+
+    function resize() {
+      const w = container!.offsetWidth;
+      const h = container!.offsetHeight;
+      canvas!.width  = w;
+      canvas!.height = h;
+      gl!.viewport(0, 0, w, h);
+      updateUniforms();
+    }
+    resize();
+
+    function draw() {
+      rafRef.current = requestAnimationFrame(draw);
+      if (!visible) return;
+      const t = (performance.now() - start) * 0.001;
+      gl!.clearColor(0, 0, 0, 0);
+      gl!.clear(gl!.COLOR_BUFFER_BIT);
+      gl!.uniform1f(uTime, t);
+      gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
+    }
+    draw();
+
+    // Pause rendering when scrolled off-screen
+    const vis = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting; },
+      { threshold: 0 }
+    );
+    vis.observe(container);
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+
     return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
-      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+      vis.disconnect();
+      gl.deleteProgram(prog);
     };
-  }, [init]);
+  }, [compact, blobX]);
 
   return (
     <div
       ref={containerRef}
       className={`hero-bg-container ${compact ? "hero-bg-compact" : "hero-bg-full"} ${className}`}
+      style={{ background: compact
+        ? "radial-gradient(ellipse at 78% 50%, #0D2218 0%, #070E09 55%, #000000 100%)"
+        : "radial-gradient(ellipse at 50% 55%, #1A3D26 0%, #0D2218 40%, #060C08 75%, #000000 100%)" }}
     >
-      <canvas ref={siriRef} className="hero-bg-canvas" aria-hidden="true" />
-      <canvas ref={particlesRef} className="hero-bg-particles" aria-hidden="true" />
-      <div className="hero-bg-radial" aria-hidden="true" />
-      <div className="hero-bg-fade" aria-hidden="true" />
+      {/* Ambient blobs — soft glow behind the metaball */}
+      <div className="amb-blob amb-blob-1" aria-hidden="true"
+        style={compact ? { top: '-10%', left: 'auto', right: '-5%' } : undefined} />
+      <div className="amb-blob amb-blob-2" aria-hidden="true"
+        style={compact ? { top: '20%', right: '10%', left: 'auto' } : undefined} />
+
+      {/* WebGL metaball canvas */}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        style={{
+          position: "absolute", inset: 0,
+          width: "100%", height: "100%",
+          pointerEvents: "none",
+        }}
+      />
+
       <div className="hero-bg-grid" aria-hidden="true" />
+      <div className="hero-bg-fade" aria-hidden="true" />
     </div>
   );
 }

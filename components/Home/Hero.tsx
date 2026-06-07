@@ -8,6 +8,14 @@ export default function Hero() {
   return (
     <section id="home" style={{ position: 'relative' }}>
       <HeroBackground />
+
+      {/* Left-side scrim — separates text from blob */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 5,
+        background: 'linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0) 78%)',
+        pointerEvents: 'none',
+      }} />
+
       <div style={{
         position: 'absolute', inset: 0, zIndex: 10,
         display: 'flex', alignItems: 'center',
@@ -20,11 +28,18 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}
           >
-            <span style={{ display: 'block', width: '2rem', height: '1.5px', background: '#0077FF' }} />
-            <span style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#0077FF', fontFamily: 'var(--font-jakarta, sans-serif)' }}>
-              AIRIV INFOTECH
+            <span style={{ display: 'block', width: '1.2rem', height: '1px', background: 'rgba(37, 99, 235, 0.7)' }} />
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '0.28em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.55)',
+              fontFamily: 'var(--font-jakarta, sans-serif)',
+            }}>
+              Airiv <span style={{ color: '#3B82F6' }}>Infotech</span>
             </span>
           </motion.div>
 
@@ -36,20 +51,20 @@ export default function Hero() {
               fontFamily: 'var(--font-jakarta, sans-serif)',
               fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
               fontWeight: 700,
-              color: '#FFFFFF',
               lineHeight: 1.1,
               marginBottom: '1.5rem',
+              textShadow: '0 2px 24px rgba(0,0,0,0.85), 0 1px 6px rgba(0,0,0,0.7)',
             }}
           >
-            Technology with Intelligence.<br />
-            Solutions with Purpose.
+            <span style={{ color: '#FFFFFF' }}>Technology with </span><span style={{ color: '#4B6EF6' }}>Intelligence.</span><br />
+            <span style={{ color: '#FFFFFF' }}>Solutions with </span><span style={{ color: '#4B6EF6' }}>Purpose.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '38rem', lineHeight: 1.8, marginBottom: '2.5rem', fontFamily: 'var(--font-inter, sans-serif)' }}
+            style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '38rem', lineHeight: 1.8, marginBottom: '2.5rem', fontFamily: 'var(--font-inter, sans-serif)', textShadow: '0 1px 12px rgba(0,0,0,0.8)' }}
           >
             We engineer intelligent, scalable, and secure enterprise solutions
             that drive real business outcomes.

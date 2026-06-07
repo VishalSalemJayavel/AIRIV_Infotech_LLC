@@ -1,7 +1,7 @@
 'use client';
 
 import { useReveal } from '@/hooks/useReveal';
-import React from 'react';
+import type React from 'react';
 
 interface ValueItem {
   icon: React.ReactNode;
@@ -38,26 +38,30 @@ const icons = {
   ),
 };
 
-const values: ValueItem[] = [
+const values = [
   {
     icon: icons.efficiency,
     title: 'Operational Efficiency',
     desc: 'Streamlining processes to reduce waste and boost productivity across every business unit.',
+    color: '#00D4FF',
   },
   {
     icon: icons.rocket,
     title: 'Faster Time-to-Market',
     desc: 'Accelerating delivery cycles through agile methodologies and intelligent automation.',
+    color: '#7C6FFF',
   },
   {
     icon: icons.shield,
     title: 'Reduced Technology Risk',
     desc: 'Proactive governance, compliance frameworks, and risk mitigation built into every solution.',
+    color: '#00E5A0',
   },
   {
     icon: icons.reliability,
     title: 'Enhanced System Reliability',
     desc: 'Resilient, fault-tolerant architectures designed for enterprise-grade uptime and performance.',
+    color: '#FF6B6B',
   },
 ];
 
@@ -75,9 +79,9 @@ export default function ValueDelivered() {
         <div className="value-grid">
           {values.map((item, index) => (
             <div
-              key={index}
+              key={item.title}
               className="value-card"
-              style={{ '--stagger': `${index * 130}ms` } as React.CSSProperties}
+              style={{ '--stagger': `${index * 130}ms`, '--card-color': item.color } as React.CSSProperties}
             >
               <div className="value-icon">{item.icon}</div>
               <div className="value-card-body">

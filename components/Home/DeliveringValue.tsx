@@ -69,7 +69,7 @@ export default function DeliveringValue() {
         </div>
 
         <div className="dv-right">
-          <Image src="/assets/delivering value.png" alt="Delivering Value" className="dv-image" width={520} height={400} loading="lazy" />
+          <Image src="/assets/delivering value.jpg" alt="Delivering Value" className="dv-image" width={520} height={400} loading="lazy" />
         </div>
       </div>
     </section>

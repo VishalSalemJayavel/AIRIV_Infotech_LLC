@@ -45,8 +45,10 @@ export default function WhatsNew() {
       else setVisibleCards(3);
     };
     updateCards();
-    window.addEventListener('resize', updateCards);
-    return () => window.removeEventListener('resize', updateCards);
+    let timer: ReturnType<typeof setTimeout>;
+    const onResize = () => { clearTimeout(timer); timer = setTimeout(updateCards, 150); };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => { window.removeEventListener('resize', onResize); clearTimeout(timer); };
   }, []);
 
   const next = () => { if (index < items.length - visibleCards) setIndex(index + 1); };
@@ -67,7 +69,7 @@ export default function WhatsNew() {
           >
             {items.map((item, i) => (
               <div
-                key={i}
+                key={item.title}
                 className="wn-card-wrap"
                 style={{
                   flex: `0 0 ${cardWidth}%`,

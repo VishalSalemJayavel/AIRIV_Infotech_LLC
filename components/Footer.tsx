@@ -4,7 +4,11 @@ import Image from 'next/image';
 export default function Footer() {
   return (
     <footer className="site-footer">
-      <div className="footer-inner">
+      {/* CSS ambient blobs — no WebGL, zero perf cost */}
+      <div className="amb-blob footer-blob-1" aria-hidden="true" />
+      <div className="amb-blob footer-blob-2" aria-hidden="true" />
+
+      <div className="footer-inner" style={{ position: 'relative', zIndex: 1 }}>
         <div className="footer-glass-card">
           <div className="footer-brand">
             <Image src="/assets/logo.svg" alt="Airiv Infotech" className="footer-logo" width={130} height={40} />
@@ -25,12 +29,12 @@ export default function Footer() {
           <div className="footer-contact-col">
             <h4>Contact</h4>
             <p>info@airivinfotech.com</p>
-            <p>+1 (555) 123-4567</p>
+            <p>+1 (555) 123-4567 (TBD)</p>
           </div>
         </div>
       </div>
 
-      <div className="footer-bottom">
+      <div className="footer-bottom" style={{ position: 'relative', zIndex: 1 }}>
         <p className="footer-copy">© 2026 Airiv Infotech. All rights reserved.</p>
       </div>
     </footer>

@@ -4,8 +4,20 @@ import ContactFormSection from '@/components/Contact/ContactFormSection';
 import ContactInfoStrip from '@/components/Contact/ContactInfoStrip';
 
 export const metadata: Metadata = {
-  title: 'Contact - Airiv Infotech',
+  title: 'Contact',
   description: "Let's Start a Conversation. Reach out to Airiv Infotech to explore how our technology services can support your business goals.",
+  openGraph: {
+    title: 'Contact | Airiv Infotech',
+    description: "Let's Start a Conversation. Reach out to Airiv Infotech to explore how our technology services can support your business goals.",
+    url: 'https://airivinfotech.com/contact',
+    siteName: 'Airiv Infotech',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact | Airiv Infotech',
+    description: "Let's Start a Conversation. Reach out to Airiv Infotech to explore how our technology services can support your business goals.",
+  },
 };
 
 export default function ContactPage() {

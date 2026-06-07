@@ -8,8 +8,20 @@ import ValueDelivered from '@/components/industries/ValueDelivered';
 import Careers from '@/components/Careers';
 
 export const metadata: Metadata = {
-  title: 'Industries - Airiv Infotech',
+  title: 'Industries',
   description: 'Industry-Focused Solutions for Real Business Challenges. We serve insurance, utilities, healthcare, manufacturing, and technology enterprises.',
+  openGraph: {
+    title: 'Industries | Airiv Infotech',
+    description: 'Industry-Focused Solutions for Real Business Challenges. We serve insurance, utilities, healthcare, manufacturing, and technology enterprises.',
+    url: 'https://airivinfotech.com/industries',
+    siteName: 'Airiv Infotech',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Industries | Airiv Infotech',
+    description: 'Industry-Focused Solutions for Real Business Challenges. We serve insurance, utilities, healthcare, manufacturing, and technology enterprises.',
+  },
 };
 
 export default function IndustriesPage() {

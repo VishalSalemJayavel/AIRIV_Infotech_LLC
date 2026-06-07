@@ -54,37 +54,37 @@ export default function ContactFormSection() {
             <form className="contact-form" onSubmit={handleSubmit}>
               <div className="form-row">
                 <div className="form-field">
-                  <label className="form-label">First Name *</label>
-                  <input type="text" name="firstName" placeholder="John" required />
+                  <label htmlFor="firstName" className="form-label">First Name *</label>
+                  <input id="firstName" type="text" name="firstName" placeholder="John" required />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">Last Name *</label>
-                  <input type="text" name="lastName" placeholder="Smith" required />
+                  <label htmlFor="lastName" className="form-label">Last Name *</label>
+                  <input id="lastName" type="text" name="lastName" placeholder="Smith" required />
                 </div>
               </div>
 
               <div className="form-field">
-                <label className="form-label">Email *</label>
-                <input type="email" name="email" placeholder="john@company.com" required />
+                <label htmlFor="email" className="form-label">Email *</label>
+                <input id="email" type="email" name="email" placeholder="john@company.com" required />
               </div>
 
               <div className="form-field">
-                <label className="form-label">Subject *</label>
-                <input type="text" name="subject" placeholder="How can we help?" required />
+                <label htmlFor="subject" className="form-label">Subject *</label>
+                <input id="subject" type="text" name="subject" placeholder="How can we help?" required />
               </div>
 
               <div className="form-field">
-                <label className="form-label">Phone Number</label>
-                <input type="text" name="phone" placeholder="+1 (555) 000-0000" />
+                <label htmlFor="phone" className="form-label">Phone Number</label>
+                <input id="phone" type="tel" name="phone" placeholder="+1 (555) 000-0000" />
               </div>
 
               <div className="form-field">
-                <label className="form-label">Message</label>
-                <textarea name="message" placeholder="Tell us about your project or challenge..." rows={5}></textarea>
+                <label htmlFor="message" className="form-label">Message</label>
+                <textarea id="message" name="message" placeholder="Tell us about your project or challenge..." rows={5}></textarea>
               </div>
 
               <label className="checkboxRow">
-                <input type="checkbox" required />
+                <input id="privacy" type="checkbox" required />
                 <span>I agree to the privacy policy and consent to being contacted.</span>
               </label>
 

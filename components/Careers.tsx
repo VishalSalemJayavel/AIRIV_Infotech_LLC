@@ -10,7 +10,7 @@ export default function Careers() {
   return (
     <section ref={ref as React.RefObject<HTMLElement>} className="careers-section pop-reveal">
       <div>
-        <Image src="/assets/career.png" alt="Careers" className="career-image" width={600} height={520} loading="lazy" />
+        <Image src="/assets/career.jpg" alt="Careers" className="career-image" width={600} height={520} loading="lazy" />
       </div>
 
       <div className="career-content">
